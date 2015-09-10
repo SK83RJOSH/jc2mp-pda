@@ -4,6 +4,7 @@ PDA.ToggleDelay = 0.25
 
 function PDA:__init()
 	self.active            = false
+	self.mouseDown         = false
 	self.dragging          = false
 	self.lastMousePosition = Mouse:GetPosition()
 	self.timer             = Timer()
@@ -24,23 +25,17 @@ function PDA:ModuleLoad()
 end
 
 function PDA:MouseDown(args)
-	if args.button == 1 then
-		if not Map.ActiveLocation then
-			self.dragging = true
-			self.lastMousePosition = Mouse:GetPosition()
-		elseif self.active then
-			self.active = false
-
-			Network:Send("Teleport", {
-				position = Map.ActiveLocation.position
-			})
-		end
+	if args.button == 1 and self.active then
+		self.mouseDown = true
 	end
+
+	self.lastMousePosition = Mouse:GetPosition()
 end
 
 function PDA:MouseMove(args)
-	if self.active and self.dragging then
+	if self.active and self.mouseDown then
 		Map.Offset = Map.Offset + ((args.position - self.lastMousePosition) / Map.Zoom)
+		self.dragging = true
 	end
 
 	self.lastMousePosition = args.position
@@ -48,8 +43,20 @@ end
 
 function PDA:MouseUp(args)
 	if args.button == 1 then
-		self.dragging = false
+		self.mouseDown = false
+
+		if self.dragging then
+			self.dragging = false
+		elseif Map.ActiveLocation then
+			self.active = false
+
+			Network:Send("Teleport", {
+				position = Map.ActiveLocation.position
+			})
+		end
 	end
+
+	self.lastMousePosition = Mouse:GetPosition()
 end
 
 function PDA:LocalPlayerInput(args)
