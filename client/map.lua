@@ -473,7 +473,7 @@ Map = {
 }
 
 function Map:Draw()
-	Render:FillArea(Vector2.Zero, Render.Size, Color.Black * 0.5)
+	Render:FillArea(Vector2.Zero, Render.Size, Color(5, 38, 48))
 
 	Map.Offset = Map.Offset * Map.Zoom
 

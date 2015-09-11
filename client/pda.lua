@@ -108,7 +108,10 @@ function PDA:LocalPlayerInput(args)
 end
 
 function PDA:PostRender()
-	if Game:GetState() ~= GUIState.Game then return end
+	if Game:GetState() ~= GUIState.Game then
+		self.active = false
+		return
+	end
 
 	Mouse:SetVisible(not PDA:IsUsingGamepad() and self.active)
 
