@@ -42,7 +42,7 @@ function PDA:MouseMove(args)
 end
 
 function PDA:MouseUp(args)
-	if args.button == 1 then
+	if args.button == 1 and self.mouseDown then
 		self.mouseDown = false
 
 		if self.dragging then
