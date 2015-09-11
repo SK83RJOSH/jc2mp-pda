@@ -56,7 +56,7 @@ function PDA:MouseUp(args)
 	if self.mouseDown == args.button then
 		if not self.dragging then
 			if args.button == 1 and Map.ActiveLocation then
-				self.active = false
+				PDA:Toggle()
 
 				Network:Send("Teleport", {
 					position = Map.ActiveLocation.position
@@ -110,7 +110,7 @@ function PDA:LocalPlayerInput(args)
 		elseif args.input == Action.GuiAnalogRight and args.state > 0.15 then
 			Map.Offset = Map.Offset - (Vector2.Right * 5 * math.pow(args.state, 2) / Map.Zoom)
 		elseif args.input == Action.Jump and Map.ActiveLocation then
-			self.active = false
+			PDA:Toggle()
 
 			Network:Send("Teleport", {
 				position = Map.ActiveLocation.position
