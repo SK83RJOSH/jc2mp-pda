@@ -16,17 +16,28 @@ function PDA:IsUsingGamepad()
 	return Game:GetSetting(GameSetting.GamepadInUse) ~= 0
 end
 
+function PDA:Toggle()
+	self.active = not self.active
+
+	if not self.active then
+		Game:FireEvent("ply.unpause")
+	else
+		Game:FireEvent("ply.pause")
+	end
+end
+
 function PDA:ModuleLoad()
 	Events:Subscribe("MouseDown", self, self.MouseDown)
 	Events:Subscribe("MouseMove", self, self.MouseMove)
 	Events:Subscribe("MouseUp", self, self.MouseUp)
 	Events:Subscribe("LocalPlayerInput", self, self.LocalPlayerInput)
 	Events:Subscribe("PostRender", self, self.PostRender)
+	Events:Subscribe("ModuleUnload", self, self.ModuleUnload)
 end
 
 function PDA:MouseDown(args)
-	if args.button == 1 and self.active then
-		self.mouseDown = true
+	if self.active then
+		self.mouseDown = args.button
 	end
 
 	self.lastMousePosition = Mouse:GetPosition()
@@ -42,18 +53,21 @@ function PDA:MouseMove(args)
 end
 
 function PDA:MouseUp(args)
-	if args.button == 1 and self.mouseDown then
-		self.mouseDown = false
+	if self.mouseDown == args.button then
+		if not self.dragging then
+			if args.button == 1 and Map.ActiveLocation then
+				self.active = false
 
-		if self.dragging then
-			self.dragging = false
-		elseif Map.ActiveLocation then
-			self.active = false
-
-			Network:Send("Teleport", {
-				position = Map.ActiveLocation.position
-			})
+				Network:Send("Teleport", {
+					position = Map.ActiveLocation.position
+				})
+			elseif args.button == 3 then
+				Map:ToggleWaypoint(Map.ActiveLocation and Map.ActiveLocation.position or Map:ScreenToWorld(Mouse:GetPosition()))
+			end
 		end
+
+		self.mouseDown = false
+		self.dragging = false
 	end
 
 	self.lastMousePosition = Mouse:GetPosition()
@@ -62,7 +76,7 @@ end
 function PDA:LocalPlayerInput(args)
 	if args.input == Action.GuiPDA then
 		if self.timer:GetSeconds() > PDA.ToggleDelay then
-			self.active = not self.active
+			PDA:Toggle()
 			self.timer:Restart()
 
 			if self.active then
@@ -101,6 +115,9 @@ function PDA:LocalPlayerInput(args)
 			Network:Send("Teleport", {
 				position = Map.ActiveLocation.position
 			})
+		elseif args.input == Action.GuiPDAExtraction and self.timer:GetSeconds() > PDA.ToggleDelay then
+			Map:ToggleWaypoint(Map.ActiveLocation and Map.ActiveLocation.position or Map:ScreenToWorld(Render.Size / 2))
+			self.timer:Restart()
 		else
 			return false
 		end
@@ -109,7 +126,7 @@ end
 
 function PDA:PostRender()
 	if Game:GetState() ~= GUIState.Game then
-		self.active = false
+		PDA:Toggle()
 		return
 	end
 
@@ -117,6 +134,12 @@ function PDA:PostRender()
 
 	if self.active then
 		Map:Draw()
+	end
+end
+
+function PDA:ModuleUnload()
+	if self.active then
+		PDA:Toggle()
 	end
 end
 

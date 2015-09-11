@@ -8,7 +8,8 @@ Location.Type = {
 	MilAir      = "MilAir",
 	MilHarb     = "MilHarb",
 	MilStrong   = "MilStrong",
-	OilRig      = "OilRig"
+	OilRig      = "OilRig",
+	Waypoint    = "Waypoint"
 }
 
 Location.TypeName = {
@@ -19,7 +20,8 @@ Location.TypeName = {
 	MilAir      = "Military AirLocation",
 	MilHarb     = "Military Harbor",
 	MilStrong   = "Military Stronghold",
-	OilRig      = "Oil Rig"
+	OilRig      = "Oil Rig",
+	Waypoint    = "Waypoint"
 }
 
 Location.Icon = {
@@ -34,7 +36,8 @@ Location.Icon = {
 		MilAir      = Vector2(0.125 * 5, 0.125 * 1),
 		MilHarb     = Vector2(0.125 * 1, 0.125 * 2),
 		MilStrong   = Vector2(0.125 * 3, 0.125 * 3),
-		OilRig      = Vector2(0.125 * 2, 0.125 * 2)
+		OilRig      = Vector2(0.125 * 2, 0.125 * 2),
+		Waypoint    = Vector2(0.125 * 7, 0.125 * 3)
 	}
 }
 
@@ -83,7 +86,10 @@ Map = {
 	Image          = Image.Create(AssetLocation.Game, "pda_map_dif.dds"),
 	Zoom           = 1,
 	Offset         = Vector2(),
+	IconScale      = 0.4,
+	WaypointScale  = 1.5,
 	ActiveLocation = nil,
+	Waypoint       = Location("Waypoint", Vector3(), Location.Type.Waypoint),
 	Locations      = {
 		Location("Kepulauan", Vector3(-1396.228, 276.0449, 10460.26), Location.Type.Comm),
 		Location("Negeri Gunung Berawn", Vector3(7826.969, 254.5643, 8466.012), Location.Type.MilLocation),
@@ -472,29 +478,63 @@ Map = {
 	}
 }
 
+function Map:ScreenToWorld(position)
+	position = ((((position - (Render.Size / 2)) / Map.Zoom) - Map.Offset) / Render.Height) * 32768
+
+	return Vector3(position.x, Physics:GetTerrainHeight(position), position.y)
+end
+
+function Map:WorldToScreen(position)
+	return (Render.Size / 2) + ((Map.Offset + ((Vector2(position.x, position.z) / 32768) * Render.Height)) * Map.Zoom)
+end
+
+function Map:ToggleWaypoint(position)
+	local wPosition, waypoint = Waypoint:GetPosition()
+
+	if waypoint and Map.Waypoint:IsActive(Map:WorldToScreen(wPosition), Map.IconScale * Map.WaypointScale * (PDA:IsUsingGamepad() and 2 or 1)) then
+		Waypoint:Remove()
+	else
+		Waypoint:SetPosition(position)
+	end
+end
+
 function Map:Draw()
 	Render:FillArea(Vector2.Zero, Render.Size, Color(5, 38, 48))
 
-	Map.Offset = Map.Offset * Map.Zoom
-
 	Map.Image:SetSize(Vector2.One * Render.Height * Map.Zoom)
-	Map.Image:SetPosition(Map.Offset + ((Render.Size - Map.Image:GetSize()) * 0.5))
+	Map.Image:SetPosition(Map:WorldToScreen(Vector3(16384, 0, 16384)) - Map.Image:GetSize())
 	Map.Image:Draw()
 
 	Map.ActiveLocation = nil
 
-	local scale = 0.4
+	local scale = Map.IconScale
 
 	for k, location in ipairs(Map.Locations) do
-		local position = Map.Offset + (Render.Size / 2) + (Vector2(location.position.x / 32768, location.position.z / 32768) * Map.Zoom * Render.Height)
+		local position = Map:WorldToScreen(location.position)
 
 		if position.x > 0 and position.y > 0 and position.x < Render.Width and position.y < Render.Height then
-			if location:IsActive(position, PDA:IsUsingGamepad() and scale * 2 or scale) then
+			if location:IsActive(position, scale * (PDA:IsUsingGamepad() and 2 or 1)) then
 				Map.ActiveLocation = location
 			end
 
 			location:Draw(position, scale)
 		end
+	end
+
+	if math.floor(PDA.timer:GetSeconds() * 4) % 2 == 0 then
+		Render:FillCircle(Map:WorldToScreen(LocalPlayer:GetPosition()), Location.Icon.Size.x * scale / 2, LocalPlayer:GetColor())
+		Render:FillCircle(Map:WorldToScreen(LocalPlayer:GetPosition()), Location.Icon.Size.x * scale / 3, Color.White)
+	end
+
+	local position, waypoint = Waypoint:GetPosition()
+
+	if waypoint then
+		Map.Waypoint.position = position
+		Map.Waypoint:Draw(Map:WorldToScreen(position), scale * Map.WaypointScale)
+	end
+
+	if Map.ActiveLocation then
+		Map.ActiveLocation:DrawTitle(Map:WorldToScreen(Map.ActiveLocation.position), scale)
 	end
 
 	if PDA:IsUsingGamepad() then
@@ -511,17 +551,6 @@ function Map:Draw()
 		Render:DrawLine(center - height, center - offsetHeight, Color.White)
 		Render:DrawLine(center + height, center + offsetHeight, Color.White)
 	end
-
-	if math.floor(PDA.timer:GetSeconds() * 4) % 2 == 0 then
-		Render:FillCircle(Map.Offset + (Render.Size / 2) + (Vector2(LocalPlayer:GetPosition().x / 32768, LocalPlayer:GetPosition().z / 32768) * Map.Zoom * Render.Height), Location.Icon.Size.x * scale / 2, LocalPlayer:GetColor())
-		Render:FillCircle(Map.Offset + (Render.Size / 2) + (Vector2(LocalPlayer:GetPosition().x / 32768, LocalPlayer:GetPosition().z / 32768) * Map.Zoom * Render.Height), Location.Icon.Size.x * scale / 3, Color.White)
-	end
-
-	if Map.ActiveLocation then
-		Map.ActiveLocation:DrawTitle(Map.Offset + (Render.Size / 2) + (Vector2(Map.ActiveLocation.position.x / 32768, Map.ActiveLocation.position.z / 32768) * Map.Zoom * Render.Height), scale)
-	end
-
-	Map.Offset = Map.Offset / Map.Zoom
 
 	collectgarbage()
 end
