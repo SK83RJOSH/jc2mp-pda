@@ -473,7 +473,7 @@ Map = {
 		Location("Kampung Teratai Putih", Vector3(-7175.5, 204.3399, -6330.171), Location.Type.CivVil),
 		Location("Kota Buluh", Vector3(8432.64, 201.4412, -12844.17), Location.Type.CivVil),
 		-- NON-SETTLEMENTS
-		Location("Hantu Island", Vector3(-14085.93, 322.74, -14204.93), Location.Type.MilStrong),
+		Location("Hantu Island", Vector3(-14091.01, 688.75, -14145.97), Location.Type.MilStrong),
 		Location("Pie Island", Vector3(8068.52, 204.97, -15463.15), Location.Type.Comm)
 	}
 }

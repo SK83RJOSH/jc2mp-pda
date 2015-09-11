@@ -59,7 +59,7 @@ function PDA:MouseUp(args)
 				PDA:Toggle()
 
 				Network:Send("Teleport", {
-					position = Map.ActiveLocation.position
+					position = Map.ActiveLocation.position + (Vector3.Up * 500)
 				})
 			elseif args.button == 3 then
 				Map:ToggleWaypoint(Map.ActiveLocation and Map.ActiveLocation.position or Map:ScreenToWorld(Mouse:GetPosition()))
@@ -113,7 +113,7 @@ function PDA:LocalPlayerInput(args)
 			PDA:Toggle()
 
 			Network:Send("Teleport", {
-				position = Map.ActiveLocation.position
+				position = Map.ActiveLocation.position + (Vector3.Up * 500)
 			})
 		elseif args.input == Action.GuiPDAExtraction and self.timer:GetSeconds() > PDA.ToggleDelay then
 			Map:ToggleWaypoint(Map.ActiveLocation and Map.ActiveLocation.position or Map:ScreenToWorld(Render.Size / 2))
