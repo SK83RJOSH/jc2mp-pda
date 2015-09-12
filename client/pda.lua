@@ -126,7 +126,10 @@ end
 
 function PDA:PostRender()
 	if Game:GetState() ~= GUIState.Game then
-		PDA:Toggle()
+		if self.active then
+			PDA:Toggle()
+		end
+
 		return
 	end
 
